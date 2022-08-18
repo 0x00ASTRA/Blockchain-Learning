@@ -1,6 +1,6 @@
+import  os
 import blockchain
-from flask import Flask, request
-import requests
+from flask import Flask, render_template
 import json
 import gen_transactions as gt
 import datetime
@@ -11,11 +11,11 @@ app = Flask(__name__)
 chain1 = blockchain.Blockchain(difficulty=2)
 
 def mine_block():
-    print('mining...')
+    print('Mining Block...')
     start_time = datetime.datetime.now()
     answer = False
-    while answer != True:
-        answer = chain1.mine() == True
+    while answer == False:
+        answer = chain1.mine()
         return answer
         
     end_time = datetime.datetime.now()
@@ -33,29 +33,61 @@ def get_chain():
     return json.dumps({'length': len(chain_data),
                        'chain': chain_data})
 
-@app.route('/', methods=['GET'])
+def log_chain():
+    with open("json/chain.json", "w") as f:
+        f.writelines(get_chain())
+
+@app.route('/api', methods=['GET'])
 
 def get_data():
+    print(get_chain())
     return get_chain()
 
 print('here')
 # for 10 blocks do this
 
 def add_and_mine():
-    for _ in range(5): 
-            chain1.add_new_transaction(gt.gen_rand_transaction())
-
-    if mine_block() != True:
-        try:    
+    # for _ in range(5): 
+    #         chain1.add_new_transaction(gt.gen_rand_transaction())
+    if mine_block() == False:
+        try:
+            print("adding 5 transactions...")    
             for _ in range(5):
                 chain1.add_new_transaction(gt.gen_rand_transaction())
-                print("transaction added")
+            
+            print("transactions added.")
+
         except:
-            print("error")
-for i in range(1,10):
+            print("error adding transactions")
+        print("uncomf trans: " + str(chain1.unconfirmed_transactions))
+
+
+print("Executing Chain Creation...")
+for i in range(1,11):
+    pr = os.fork()
+    if pr is 0:
+        print(" ")
+        add_and_mine()
+    else:    
+        print("The parent process is now waiting")
+        cpe = os.wait()
+        print("Child process with number %d exited" % (cpe[0]))
+        print("Parent process with number %d exiting after child has executed its process" % (os.getpid()))
+        print("The parent process is", (os.getpid()))
+
+    if not cpe:
+        print(f"{i} complete")
+
+for i in range(1,11):
     add_and_mine()
     print(f"{i} complete")
 
+get_data()
+log_chain()
+
+@app.route('/', methods=['GET'])
+def mainpage():
+    return  render_template('mainpage.html')
 # main = app.run(debug=True, port=7000)
 app.run(debug=True, port=7000)
     

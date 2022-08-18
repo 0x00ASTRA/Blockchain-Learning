@@ -1,9 +1,6 @@
 # generate random transactions to use for testing chains
-
-from hashlib import sha256
 import json
 import random
-import keyboard
 
 names = [
     'Tim',
